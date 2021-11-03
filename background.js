@@ -34,16 +34,25 @@ const App = () => {
     }
     const checkUrl = () => /^https:\/\/music.yandex.ru/.test(window.location.href)
 
+    const sendStatus = () => {
+        chrome.runtime.sendMessage({
+            type: 'status',
+            value: window.yaMusicAdBlockerStatus
+        })
+    }
     const start = () => {
         log('start')
         window.yaMusicAdBlockerInterval = setInterval(actions, PERIOD);
         window.yaMusicAdBlockerStatus = 'start'
+        sendStatus()
     }
     const stop = () => {
         log('stop')
         clearInterval(window.yaMusicAdBlockerInterval)
         window.yaMusicAdBlockerStatus = 'stop'
+        sendStatus()
     }
+
     if (!checkUrl()) {
         console.error(`${preffix} Extension works only on https://music.yandex.ru`)
         return
@@ -61,4 +70,15 @@ chrome.action.onClicked.addListener((tab) => {
         },
         function: App
     })
+    chrome.tabs.onMessage.addListener((msg) => {
+        console.log(msg);
+    })
+})
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'status') {
+        const path = message.value === 'start' ? 'icons/16.png' : 'icons/16-stop.png'
+        const title = `Click to ${message.value === 'start' ? 'stop' : 'start'} blocking ad`
+        chrome.action.setIcon({ path })
+        chrome.action.setTitle({ title })
+    }
 })
